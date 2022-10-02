@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <base href="//webapi.amap.com/ui/1.1/ui/misc/PathSimplifier/examples/" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+
+  <title>实时轨迹</title>
+  <style>
+    html,
+    body,
+    #container {
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+    }
+  </style>
+</head>
+<body>
+<div id="container"></div>
+<script type="text/javascript" src='//webapi.amap.com/maps?v=2.0&key=90caf77b9fd23ecb4845d0cd441d8c91'></script>
+<!-- UI组件库 1.0 -->
+<script src="//webapi.amap.com/ui/1.1/main.js?v=1.1.1"></script>
+<script type="text/javascript">
+
+  /* 构建地图 */
+  var googleMapLayer =
+          new
+          AMap.TileLayer({
+            //图层
+            getTileUrl:'http://mt{1,2,3,0}.google.cn/vt/lyrs=s&x=[x]&y=[y]&z=[z]&s=GPS'
+          });
+
+  //创建地图
+  var map = new AMap.Map('container', {
+    center:[120.042524730972,30.233728435037],
+    zoom: 18,
+    layers: [googleMapLayer]
+  });
+
+  AMapUI.load(['ui/misc/PathSimplifier', 'lib/$'], function(PathSimplifier, $) {
+
+    var websocket = null;
+    var target = "ws://localhost:8080/websocket";
+    let mypath = [];
+    var navg1;
+    var endIdx;
+
+    window.onbeforeunload = function () {
+      websocket.onclose = function () {};  // 首先关闭 WebSocket
+      websocket.close()
+    };
+
+
+    if (!PathSimplifier.supportCanvas) {
+      alert('当前环境不支持 Canvas！');
+      return;
+    }
+
+    var pathSimplifierIns = new PathSimplifier({
+      zIndex: 100,
+      autoSetFitView: false,
+      map: map, //所属的地图实例
+
+      getPath: function(pathData, pathIndex) {
+
+        return pathData.path;
+      },
+      getHoverTitle: function(pathData, pathIndex, pointIndex) {
+
+        if (pointIndex >= 0) {
+          //point
+          return pathData.name + '，点：' + pointIndex + '/' + pathData.path.length;
+        }
+
+        return pathData.name + '，点数量' + pathData.path.length;
+      },
+      renderOptions: {
+
+        renderAllPointsIfNumberBelow: 100 //绘制路线节点，如不需要可设置为-1
+      }
+    });
+
+    function doExpand() {
+
+      endIdx++;
+
+      if (endIdx >= mypath.length) {
+        return false;
+      }
+
+      var cursor = navg1.getCursor().clone(), //保存巡航器的位置
+              status = navg1.getNaviStatus();
+
+
+      data[0].path = mypath.slice(0, endIdx + 1);
+      pathSimplifierIns.setData(data); //延展路径
+
+
+      //重新建立一个巡航器
+      navg1 = pathSimplifierIns.createPathNavigator(0, {
+        loop: false, //循环播放
+        speed: 15//巡航速度，单位千米/小时
+      });
+
+      if (status !== 'stop') {
+        navg1.start();
+      }
+
+      //恢复巡航器的位置
+      if (cursor.idx >= 0) {
+        navg1.moveToPoint(cursor.idx, cursor.tail);
+      }
+      return true;
+    }
+
+    function buildConnection() {
+      var n = 0;
+      if('WebSocket' in window) {
+        websocket = new WebSocket(target);
+      } else if('MozWebSocket' in window) {
+        websocket = MozWebSocket(target);
+      } else {
+        window.alert("浏览器不支持WebSocket");
+      }
+      websocket.onmessage = function (event){
+        var arr = event.data.split(",");
+        var lat = Number(arr[0]);
+        var lon = Number(arr[1]);
+        let temp = [lon,lat];
+        mypath.push(temp);
+        if(n===0){
+          window.pathSimplifierIns = pathSimplifierIns;
+          endIdx = 0;
+          data = [{
+            name: '动态路线',
+            path: mypath.slice(0, 1)
+          }];
+          pathSimplifierIns.setData(data);
+
+          //对第一条线路（即索引 0）创建一个巡航器
+          navg1 = pathSimplifierIns.createPathNavigator(0, {
+            loop: true, //循环播放
+            speed: 100 //巡航速度，单位千米/小时
+          });
+          navg1.start();
+        }
+        else {
+          if(doExpand()){
+            console.log("success");
+          }
+        }
+        n++;
+      }
+    }
+    // 监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+      websocket.close();
+    }
+    buildConnection();
+    // navg1.start();
+    // expandPath();
+  });
+</script>
+</body>
+</html>
