@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <base href="//webapi.amap.com/ui/1.1/ui/misc/PathSimplifier/examples/" />
@@ -17,11 +17,13 @@
     }
   </style>
 </head>
+
 <body>
 <div id="container"></div>
 <script type="text/javascript" src='//webapi.amap.com/maps?v=2.0&key=90caf77b9fd23ecb4845d0cd441d8c91'></script>
 <!-- UI组件库 1.0 -->
 <script src="//webapi.amap.com/ui/1.1/main.js?v=1.1.1"></script>
+<button id="clear" >Clear</button>
 <script type="text/javascript">
 
   /* 构建地图 */
@@ -115,15 +117,19 @@
       return true;
     }
 
+    var websocket;
     function buildConnection() {
-      var n = 0;
-      if('WebSocket' in window) {
+      if ('WebSocket' in window) {
         websocket = new WebSocket(target);
-      } else if('MozWebSocket' in window) {
+      } else if ('MozWebSocket' in window) {
         websocket = MozWebSocket(target);
       } else {
         window.alert("浏览器不支持WebSocket");
       }
+    }
+
+    function acceptSocket(){
+      var n = 0;
       websocket.onmessage = function (event){
         var arr = event.data.split(",");
         var lat = Number(arr[0]);
@@ -159,6 +165,16 @@
       websocket.close();
     }
     buildConnection();
+    acceptSocket();
+
+    var btnEle = document.getElementById("clear");
+    btnEle.onclick = function (){
+      mypath = [];
+      endIdx = 0;
+      // navg1.destroy();
+      pathSimplifierIns.setData([]);
+      acceptSocket();
+    }
     // navg1.start();
     // expandPath();
   });
