@@ -26,12 +26,13 @@
 <button id="clear" >Clear</button>
 <script type="text/javascript">
 
-  /* 构建地图 */
   var googleMapLayer =
           new
           AMap.TileLayer({
             //图层
-            getTileUrl:'http://mt{1,2,3,0}.google.cn/vt/lyrs=s&x=[x]&y=[y]&z=[z]&s=GPS'
+            // getTileUrl:'http://mt{1,2,3,0}.google.cn/vt/lyrs=s&x=[x]&y=[y]&z=[z]&s=GPS'
+            getTileUrl:'https://t6.tianditu.gov.cn/DataServer?T=img_w&x=[x]&y=[y]&l=[z]&tk=4fd0965bf20e819d8811a92f4d5de48b'
+
           });
 
   //创建地图
@@ -44,7 +45,7 @@
   AMapUI.load(['ui/misc/PathSimplifier', 'lib/$'], function(PathSimplifier, $) {
 
     var websocket = null;
-    var target = "ws://localhost:8080/websocket";
+    var target = "ws://81.69.233.50:8080/websocket";
     let mypath = [];
     var navg1;
     var endIdx;

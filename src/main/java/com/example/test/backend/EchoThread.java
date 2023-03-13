@@ -21,6 +21,7 @@ class EchoThread implements Runnable {
             BufferedReader in = null;
             String br = null;
             boolean flag = true;
+            System.out.println("正在监听session"+session);
             while (flag == true) {
                 //Java流的操作没意见吧
                 in = new BufferedReader(new InputStreamReader(client.getInputStream()));

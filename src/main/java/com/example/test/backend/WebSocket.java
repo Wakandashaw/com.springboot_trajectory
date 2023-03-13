@@ -15,22 +15,18 @@ import java.net.Socket;
 
 @ServerEndpoint("/websocket")
 @Component
-public class WebSocket implements Runnable {
-    private static int onlineCount = 0;
+public class WebSocket{
     protected static ServerSocket serverSocket = null;
-    private Session session;
     //用来存放每个客户端对应的MyWebSocket对象。
     //与某个客户端的连接会话，需要通过它来给客户端发送数据
-    private boolean isRunning;
 
     /**
-     * 构造函数分配后端服务的端口——8080
+     * 构造函数分配后端服务的端口——8001
      * */
     public WebSocket(){
         try{
             if(serverSocket==null || !serverSocket.isBound()){
                 serverSocket = new ServerSocket(8001);
-                start();
             }
         }
         catch (IOException e){
@@ -38,25 +34,6 @@ public class WebSocket implements Runnable {
         }
     }
 
-
-    public static synchronized int getOnlineCount() {
-        return onlineCount;
-    }
-
-    public static synchronized void addOnlineCount() {
-        WebSocket.onlineCount++;
-    }
-
-    public static synchronized void subOnlineCount() {
-        WebSocket.onlineCount--;
-    }
-    public void stop() {
-        this.isRunning = false;
-    }
-    public void start() {
-        this.isRunning = true;
-        new Thread(this).start();
-    }
 
 
     /**
@@ -68,9 +45,8 @@ public class WebSocket implements Runnable {
         System.out.println("开始建立了链接...");
         System.out.println("当前session的id是：" + session.getId());
 
-        addOnlineCount();
-        this.session = session;
-//        getLocation(session);
+        System.out.println("服务开启");
+        getLocation(session);
     }
 
     @OnClose
@@ -81,10 +57,6 @@ public class WebSocket implements Runnable {
 
     private synchronized void getLocation(Session session) throws IOException {
         try{
-            //创建一个服务器对象，端口8001
-            if(serverSocket==null || !serverSocket.isBound()){
-                serverSocket=new ServerSocket(8001);
-            }
             //创建一个客户端对象，这里的作用是用作多线程，必经服务器服务的不是一个客户端
             Socket client=null;
             //accept是阻塞式方法
@@ -93,29 +65,28 @@ public class WebSocket implements Runnable {
                 client = serverSocket.accept();
                 //创建一个线程，每个客户端对应一个线程
                 new Thread(new EchoThread(client,session)).start();
-                client.close();
+//                client.close();
             }
         }catch(Exception e){
             e.printStackTrace();
         }
     }
 
-
-    @Override
-    public void run(){
-        System.out.println("服务开启");
-        while (isRunning) {//一直监听，直到受到停止的命令
-            Socket client = null;
-            try{
-                System.out.println("服务器已启动，等待客户端请求。。。。");
-                client = serverSocket.accept();
-                //创建一个线程，每个客户端对应一个线程
-                new Thread(new EchoThread(client,session)).start();
-                client.close();
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-    }
+//    @Override
+//    public void run(){
+//        System.out.println("服务开启");
+//        while (isRunning) {//一直监听，直到受到停止的命令
+//            Socket client = null;
+//            try{
+//                System.out.println("服务器已启动，等待客户端请求。。。。");
+//                client = serverSocket.accept();
+//                //创建一个线程，每个客户端对应一个线程
+//                new Thread(new EchoThread(client,session)).start();
+//                client.close();
+//            }catch(Exception e){
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 }
 
